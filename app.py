@@ -1,20 +1,37 @@
 from flask import Flask, request, render_template, jsonify
 import pickle
+import traceback
 
 # Initialize Flask app
 app = Flask(__name__)
 
 # Load pre-trained model and vectorizer
-joblib_model = pickle.load(open('model2.pkl', 'rb'))
-joblib_vect = pickle.load(open('tfidfvect2.pkl', 'rb'))
+try:
+    joblib_model = pickle.load(open('model2.pkl', 'rb'))
+    joblib_vect = pickle.load(open('tfidfvect2.pkl', 'rb'))
+except Exception as e:
+    raise RuntimeError(f"Failed to load model or vectorizer: {str(e)}")
 
 # Preprocess and classify news input
 def classify_news(user_input):
-    if not user_input.strip():
-        return "Error: Empty input. Please enter a valid news statement."
-    processed_input = joblib_vect.transform([user_input]).toarray()
-    prediction = joblib_model.predict(processed_input)
-    return prediction
+    try:
+        if not user_input.strip():
+            return "Error: Empty input. Please enter a valid news statement."
+
+        # Check if the vectorizer is fitted
+        if not hasattr(joblib_vect, 'vocabulary_'):
+            return "Error: Vectorizer is not fitted. Please ensure it is trained and saved correctly."
+
+        processed_input = joblib_vect.transform([user_input])
+
+        # Check if dimensions match
+        if processed_input.shape[1] != joblib_model.coef_.shape[1]:
+            return "Error: Dimension mismatch between vectorizer and model. Ensure both are trained on the same dataset."
+
+        prediction = joblib_model.predict(processed_input)
+        return prediction
+    except Exception as e:
+        return f"Error during classification: {str(e)}"
 
 @app.route('/')
 def home():
@@ -25,12 +42,19 @@ def predict():
     try:
         # Get user input from form
         user_input = request.form.get('news_statement', '')
+        if not user_input:
+            return render_template('index.html', prediction="Error: No input provided.")
+
         # Classify the input
         prediction = classify_news(user_input)
+        if isinstance(prediction, str) and prediction.startswith("Error"):
+            return render_template('index.html', prediction=prediction)
+
         result = "Fake News!" if prediction[0] == 0 else "Real News"
         return render_template('index.html', prediction=result)
     except Exception as e:
-        return jsonify({'error': str(e)})
+        error_message = f"An unexpected error occurred: {str(e)}"
+        return render_template('index.html', prediction=error_message)
 
 if __name__ == '__main__':
     app.run(debug=True)
