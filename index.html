@@ -1,68 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Fake News Detector</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            margin: 0;
-            padding: 0;
-        }
-        .container {
-            max-width: 600px;
-            margin: 50px auto;
-            background: #fff;
-            padding: 20px;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-            border-radius: 8px;
-        }
-        h1 {
-            text-align: center;
-            color: #333;
-        }
-        textarea {
-            width: 100%;
-            height: 100px;
-            margin: 10px 0;
-            padding: 10px;
-            font-size: 16px;
-        }
-        button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            background: #007BFF;
-            color: #fff;
-            font-size: 18px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background: #0056b3;
-        }
-        .result {
-            margin-top: 20px;
-            font-size: 18px;
-            text-align: center;
-            color: #444;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
-        <h1>Fake News Detector</h1>
-        <form action="/predict" method="post">
-            <textarea name="news_statement" placeholder="Enter news statement here..."></textarea>
-            <button type="submit">Check</button>
+        <h1>Fake News Detection</h1>
+        <form action="/predict" method="POST">
+            <input type="text" name="article_url" placeholder="Enter Article URL">
+            <input type="text" name="news_statement" placeholder="Enter News Statement">
+            <button type="submit">Predict</button>
         </form>
+        
         {% if prediction %}
-        <div class="result">
-            <strong>Prediction:</strong> {{ prediction }}
-        </div>
+            <div class="result {% if 'Fake' in prediction %}error{% else %}success{% endif %}">
+                {{ prediction|safe }}
+            </div>
         {% endif %}
     </div>
 </body>
